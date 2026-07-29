@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+risk_sentinel/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# MQTT logs
+*.log
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Streamlit
+.streamlit/
+
+# OS
+Thumbs.db
+Desktop.ini
