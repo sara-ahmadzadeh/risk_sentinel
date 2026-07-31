@@ -14,11 +14,17 @@ engine = create_engine(DATABASE_URL)
 # MQTT Configuration
 MQTT_BROKER = "test.mosquitto.org"
 MQTT_PORT = 1883
+
+# --- FIXED: Subscribe to ALL topics ---
 TOPICS = [
     "risk_sentinel/sensors/temperature",
     "risk_sentinel/security/motion",
-    "risk_sentinel/security/door",
-    "risk_sentinel/safety/smoke"
+    "risk_sentinel/security/windows",    # NEW
+    "risk_sentinel/security/doors",      # NEW
+    "risk_sentinel/safety/smoke",
+    "risk_sentinel/energy/lights",       # NEW
+    "risk_sentinel/sensors/humidity",    # NEW
+    "risk_sentinel/environment/co2"      # NEW
 ]
 
 class MQTTIngester:
