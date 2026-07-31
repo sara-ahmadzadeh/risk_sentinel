@@ -1,13 +1,14 @@
 import json
+import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import numpy as np
 
 load_dotenv()
 
-DATABASE_URL = "postgresql://admin:password123@localhost:5432/risk_sentinel"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:password123@localhost:5432/risk_sentinel")
 engine = create_engine(DATABASE_URL)
 
 # Configuration
@@ -17,11 +18,11 @@ STD_DEVIATION_THRESHOLD = 3.0
 
 class AnomalyDetector:
     def __init__(self):
-        self.last_check = datetime.utcnow()
+        self.last_check = datetime.now(timezone.utc)
         
     def detect_temperature_anomaly(self, device_id, current_temp):
         """Check if current temperature is a statistical anomaly"""
-        time_window = datetime.utcnow() - timedelta(minutes=TIME_WINDOW_MINUTES)
+        time_window = datetime.now(timezone.utc) - timedelta(minutes=TIME_WINDOW_MINUTES)
         
         with engine.connect() as conn:
             query = text("""
@@ -54,8 +55,6 @@ class AnomalyDetector:
     
     def detect_motion_anomaly(self, device_id, motion_detected):
         """Check for unexpected motion (e.g., while house is 'away')"""
-        # Simple rule: motion detected is always an alert for demo purposes
-        # In production, you'd check system state (armed/disarmed)
         if motion_detected:
             return {
                 "is_anomaly": True,
@@ -77,7 +76,7 @@ class AnomalyDetector:
     def process_new_events(self):
         """Fetch events since last check and run detection"""
         last_check = self.last_check
-        self.last_check = datetime.utcnow()
+        self.last_check = datetime.now(timezone.utc)
         
         with engine.connect() as conn:
             # Get events since last check
@@ -91,27 +90,27 @@ class AnomalyDetector:
             events = results.fetchall()
             
             for event in events:
-                payload = json.loads(event.payload)
+                # FIXED: payload is already a dict from PostgreSQL JSONB
+                payload = event.payload  # <-- REMOVED json.loads()
                 device_id = event.device_id
                 alert = None
                 
                 # Route to appropriate detector based on device type
                 if "temperature" in payload:
-                    if "temperature" in payload:
-                        temp = payload["temperature"]
-                        result = self.detect_temperature_anomaly(device_id, temp)
-                        if result["is_anomaly"]:
-                            alert = {
-                                "device_id": device_id,
-                                "alert_type": "temperature_spike",
-                                "severity": result["severity"],
-                                "details": {
-                                    "temperature": temp,
-                                    "reason": result["reason"],
-                                    "avg": result.get("avg"),
-                                    "stddev": result.get("stddev")
-                                }
+                    temp = payload["temperature"]
+                    result = self.detect_temperature_anomaly(device_id, temp)
+                    if result["is_anomaly"]:
+                        alert = {
+                            "device_id": device_id,
+                            "alert_type": "temperature_spike",
+                            "severity": result["severity"],
+                            "details": {
+                                "temperature": temp,
+                                "reason": result["reason"],
+                                "avg": result.get("avg"),
+                                "stddev": result.get("stddev")
                             }
+                        }
                             
                 elif "motion_detected" in payload:
                     motion = payload["motion_detected"]

@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import paho.mqtt.client as mqtt
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
@@ -53,12 +53,12 @@ class MQTTIngester:
                         "device_id": device_id,
                         "topic": msg.topic,
                         "payload": json.dumps(payload),  # Store as JSON string
-                        "received_at": datetime.utcnow()
+                        "received_at": datetime.now(timezone.utc)
                     }
                 )
                 conn.commit()
                 
-            print(f"[INGESTED] {msg.topic} → {device_id} at {datetime.utcnow().strftime('%H:%M:%S')}")
+            print(f"[INGESTED] {msg.topic} → {device_id} at {datetime.now(timezone.utc).strftime('%H:%M:%S')}")
             
         except Exception as e:
             print(f"[ERROR] Failed to process message: {e}")
