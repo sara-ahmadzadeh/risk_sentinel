@@ -53,7 +53,8 @@ class MQTTIngester:
                         "device_id": device_id,
                         "topic": msg.topic,
                         "payload": json.dumps(payload),
-                        "received_at": datetime.now(timezone.utc)
+                        "received_at": datetime.now(timezone.utc),
+                        "source": "mqtt_ingester"
                     }
                 )
                 conn.commit()

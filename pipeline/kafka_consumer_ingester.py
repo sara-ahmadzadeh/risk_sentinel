@@ -48,7 +48,8 @@ with engine.connect() as conn:
                 "device_id": device_id,
                 "topic": topic,
                 "payload": json.dumps(payload),
-                "received_at": datetime.now(timezone.utc)
+                "received_at": datetime.now(timezone.utc),
+                "source": "kafka_ingester"
             }
         )
         conn.commit()
