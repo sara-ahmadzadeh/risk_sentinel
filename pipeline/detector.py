@@ -96,7 +96,6 @@ class AnomalyDetector:
     def detect_window_anomaly(self, device_id, room, is_open, timestamp):
         hour = datetime.now().hour
         if is_open:
-            # Get current room temperature from JSON payload
             with engine.connect() as conn:
                 query = text("""
                     SELECT (payload->>'temperature_f')::FLOAT as temp
@@ -237,14 +236,15 @@ class AnomalyDetector:
                 if result and result.get("is_anomaly"):
                     conn.execute(
                         text("""
-                            INSERT INTO alerts (device_id, alert_type, severity, details)
-                            VALUES (:device_id, :alert_type, :severity, :details)
+                            INSERT INTO alerts (device_id, alert_type, severity, details, source)
+                            VALUES (:device_id, :alert_type, :severity, :details, :source)
                         """),
                         {
                             "device_id": device_id,
                             "alert_type": alert_type,
                             "severity": result["severity"],
-                            "details": json.dumps({"reason": result["reason"]})
+                            "details": json.dumps({"reason": result["reason"]}),
+                            "source": "mqtt_detector"
                         }
                     )
                     conn.commit()
@@ -252,7 +252,8 @@ class AnomalyDetector:
                     print(f"[🚨] {result['severity']} | {device_id} | {result['reason'][:60]}...")
     
     def run(self):
-        print("🎯 Detector started (76 devices, contextual rules)")
+        print("🎯 MQTT Detector Started (Source: mqtt_detector)")
+        print("   Polling every 5 seconds")
         try:
             while True:
                 self.process_new_events()

@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from datetime import datetime, timezone
 import paho.mqtt.client as mqtt
 from sqlalchemy import create_engine, text
@@ -46,8 +47,8 @@ class MQTTIngester:
             with engine.connect() as conn:
                 conn.execute(
                     text("""
-                        INSERT INTO raw_events (device_id, topic, payload, received_at)
-                        VALUES (:device_id, :topic, :payload, :received_at)
+                        INSERT INTO raw_events (device_id, topic, payload, received_at, source)
+                        VALUES (:device_id, :topic, :payload, :received_at, :source)
                     """),
                     {
                         "device_id": device_id,
@@ -69,10 +70,9 @@ class MQTTIngester:
             print(f"[ERROR] {e}")
             
     def run(self):
-        print("🔄 Ingester started")
+        print("🔄 MQTT Ingester Started (Source: mqtt_ingester)")
         self.client.connect(MQTT_BROKER, MQTT_PORT, 60)
         self.client.loop_forever()
 
 if __name__ == "__main__":
-    import time
     MQTTIngester().run()

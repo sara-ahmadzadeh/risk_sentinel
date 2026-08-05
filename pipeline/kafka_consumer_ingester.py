@@ -24,7 +24,7 @@ consumer = KafkaConsumer(
 )
 
 print(f"✅ Connected to Kafka at {KAFKA_BROKER}")
-print(f"🔄 Kafka Ingester Started")
+print(f"🔄 Kafka Ingester Started (Source: kafka_ingester)")
 print(f"   Listening on topic: {KAFKA_TOPIC}")
 print("   Press Ctrl+C to stop\n")
 
@@ -37,10 +37,10 @@ with engine.connect() as conn:
         device_id = payload.get("device_id", "unknown")
         topic = payload.get("_meta", {}).get("mqtt_topic", "unknown")
         
-        # Insert into PostgreSQL
+        # Insert into PostgreSQL with source
         insert_query = text("""
-            INSERT INTO raw_events (device_id, topic, payload, received_at)
-            VALUES (:device_id, :topic, :payload, :received_at)
+            INSERT INTO raw_events (device_id, topic, payload, received_at, source)
+            VALUES (:device_id, :topic, :payload, :received_at, :source)
         """)
         conn.execute(
             insert_query,

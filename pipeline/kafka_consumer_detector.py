@@ -16,7 +16,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:password123@localho
 
 engine = create_engine(DATABASE_URL)
 
-# Configuration
 STD_DEVIATION_THRESHOLD = 3.0
 TIME_WINDOW_MINUTES = 10
 
@@ -37,7 +36,6 @@ class KafkaDetector:
         )
         print(f"✅ Connected to Kafka at {KAFKA_BROKER}")
         
-    # ============ DETECTION METHODS (same as before) ============
     def detect_temperature_anomaly(self, device_id, room, current_temp, timestamp):
         time_window = datetime.now(timezone.utc) - timedelta(minutes=TIME_WINDOW_MINUTES)
         with engine.connect() as conn:
@@ -200,10 +198,9 @@ class KafkaDetector:
                 "reason": f"{door_type} open at {hour}:00"
             }
         return {"is_anomaly": False}
-
-    # ============ MAIN PROCESSING LOOP ============
+    
     def run(self):
-        print("🎯 Kafka Detector Started (Event-Driven)")
+        print("🎯 Kafka Detector Started (Source: kafka_detector)")
         print(f"   Listening on topic: {KAFKA_TOPIC}")
         print("   Press Ctrl+C to stop\n")
         
@@ -244,19 +241,25 @@ class KafkaDetector:
                 if result and result.get("is_anomaly"):
                     conn.execute(
                         text("""
-                            INSERT INTO alerts (device_id, alert_type, severity, details)
-                            VALUES (:device_id, :alert_type, :severity, :details)
+                            INSERT INTO alerts (device_id, alert_type, severity, details, source)
+                            VALUES (:device_id, :alert_type, :severity, :details, :source)
                         """),
                         {
                             "device_id": device_id,
                             "alert_type": alert_type,
                             "severity": result["severity"],
-                            "details": json.dumps({"reason": result["reason"]})
+                            "details": json.dumps({"reason": result["reason"]}),
+                            "source": "kafka_detector"
                         }
                     )
                     conn.commit()
                     self.alert_count += 1
                     print(f"[🚨] {result['severity']} | {device_id} | {result['reason'][:60]}...")
+                    
+                    if time.time() - self.last_report >= 60:
+                        print(f"[📊] {self.alert_count} alerts generated in 60s")
+                        self.alert_count = 0
+                        self.last_report = time.time()
 
 if __name__ == "__main__":
     detector = KafkaDetector()
